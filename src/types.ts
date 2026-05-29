@@ -22,6 +22,17 @@ export interface Workout {
   xpEarned: number;
 }
 
+export interface SocialWorkout {
+  id: string;
+  authorName: string;
+  authorAvatar: string;
+  authorTier: LeaderboardEntry["tier"];
+  isMe?: boolean;
+  workout: Workout;
+  highFived?: boolean;
+  highFiveCount: number;
+}
+
 export interface BossChallenge {
   title: string;
   description: string;

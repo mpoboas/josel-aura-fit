@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserProfile } from "../types";
-import { HelpCircle, RefreshCw, Star, Info, ChevronRight, Check } from "lucide-react";
+import { ChevronRight, Check, X } from "lucide-react";
 
 interface Props {
   userProfile: UserProfile;
@@ -15,59 +15,56 @@ export default function MainQuizOverlay({ userProfile, onUpdateScores, onClose }
   const drives = [
     {
       key: "meaning" as const,
-      name: "Epic Meaning & Calling",
-      desc: "Do you want to feel part of a collective fitness movement or help beginners via mentorship badges?",
+      name: "Epic Meaning",
+      desc: "Being part of something bigger — a fitness community or mentorship.",
       icon: "🌟"
     },
     {
       key: "accomplishment" as const,
-      name: "Development & Accomplishment",
-      desc: "Does hitting a specific weight PR and climbing levels satisfy your drive for progress?",
+      name: "Accomplishment",
+      desc: "Hitting PRs, leveling up, and seeing measurable progress.",
       icon: "🏆"
     },
     {
       key: "creativity" as const,
-      name: "Empowerment of Creativity",
-      desc: "Do you enjoy designing your own workout splits or receiving dynamic analytics feedback?",
+      name: "Creativity",
+      desc: "Designing your own splits and exploring new exercises.",
       icon: "🎨"
     },
     {
       key: "ownership" as const,
-      name: "Ownership & Possession",
-      desc: "Do you care about badge cabinets, owning streak protectors, and accumulated stats?",
+      name: "Ownership",
+      desc: "Collecting badges, stats, and streak protection items.",
       icon: "🎒"
     },
     {
       key: "influence" as const,
-      name: "Social Influence & Relatedness",
-      desc: "Does competing directly with friends on leaderboards and sending high-fives govern your motivation?",
+      name: "Social Influence",
+      desc: "Competing with friends and sending high-fives on the leaderboard.",
       icon: "👥"
     },
     {
       key: "scarcity" as const,
-      name: "Scarcity & Impatience",
-      desc: "Does a time-limited monthly boss challenge and urgency create drive for consistency?",
+      name: "Scarcity",
+      desc: "Time-limited boss challenges and exclusive rewards.",
       icon: "⏳"
     },
     {
       key: "curiosity" as const,
-      name: "Unpredictability & Curiosity",
-      desc: "Do unexpected AI coaches, mysterious custom rewards, and surprise milestones keep you excited?",
+      name: "Curiosity",
+      desc: "Surprise milestones and unexpected rewards.",
       icon: "🧩"
     },
     {
       key: "avoidance" as const,
-      name: "Loss & Avoidance",
-      desc: "Does the anxiety of breaking a 14-day streak or being demoted down leaderboards govern your behavior?",
+      name: "Loss Avoidance",
+      desc: "Protecting your streak and avoiding rank drops.",
       icon: "🛡️"
     }
   ];
 
   const handleSliderChange = (key: keyof UserProfile["octalysisScores"], value: number) => {
-    setScores({
-      ...scores,
-      [key]: value
-    });
+    setScores({ ...scores, [key]: value });
   };
 
   const handleNext = () => {
@@ -81,69 +78,67 @@ export default function MainQuizOverlay({ userProfile, onUpdateScores, onClose }
   const currentDrive = drives[activeQuestion];
 
   return (
-    <div id="octalysis-quiz-overlay" className="fixed inset-0 bg-[#050505]/95 backdrop-blur-md z-40 flex items-center justify-center p-4 font-sans">
-      <div className="bg-zinc-900 w-full max-w-sm rounded-[2.5rem] border border-white/10 p-6 shadow-2xl overflow-hidden flex flex-col max-h-[500px]">
-        
-        {/* Progress header bar */}
-        <div className="flex justify-between items-center text-[10px] font-mono text-cyan-400 uppercase tracking-widest border-b border-white/5 pb-3 mb-4 shrink-0">
-          <span>Octalysis Drives Self-Quiz</span>
+    <div className="fixed inset-0 bg-[#050505]/95 backdrop-blur-md z-40 flex flex-col safe-top safe-bottom safe-x">
+      <div className="flex justify-between items-center px-4 py-3 border-b border-white/5 shrink-0">
+        <span className="text-sm font-semibold text-white">Motivation Quiz</span>
+        <button onClick={onClose} className="p-2 rounded-xl active:bg-white/5 touch-target" aria-label="Close">
+          <X className="w-5 h-5 text-slate-400" />
+        </button>
+      </div>
+
+      <div className="px-4 py-3 shrink-0">
+        <div className="flex justify-between text-xs text-cyan-400 mb-2">
           <span>{activeQuestion + 1} of {drives.length}</span>
+          <span>{Math.round(((activeQuestion + 1) / drives.length) * 100)}%</span>
         </div>
+        <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
+          <div
+            className="bg-cyan-400 h-full rounded-full transition-all"
+            style={{ width: `${((activeQuestion + 1) / drives.length) * 100}%` }}
+          />
+        </div>
+      </div>
 
-        {/* Dynamic Question body */}
-        <div className="flex-1 overflow-y-auto pr-1 flex flex-col justify-center font-sans">
-          <div className="text-4xl text-center mb-3">
-            {currentDrive.icon}
+      <div className="flex-1 overflow-y-auto scroll-container px-4 flex flex-col justify-center">
+        <div className="text-5xl text-center mb-4">{currentDrive.icon}</div>
+        <h3 className="text-lg font-bold text-white text-center mb-2 font-serif italic">{currentDrive.name}</h3>
+        <p className="text-sm text-slate-400 text-center leading-relaxed mb-8 px-2">{currentDrive.desc}</p>
+
+        <div className="bg-white/5 border border-white/5 p-5 rounded-2xl">
+          <div className="flex justify-between text-xs text-slate-500 mb-4">
+            <span>Not important</span>
+            <span className="text-cyan-400 font-bold text-base">{scores[currentDrive.key]}%</span>
+            <span>Very important</span>
           </div>
-          
-          <h3 className="text-sm font-bold text-white text-center tracking-tight mb-2 font-serif italic">
-            {currentDrive.name}
-          </h3>
-          <p className="text-xs text-slate-400 text-center leading-normal mb-6 leading-relaxed">
-            {currentDrive.desc}
-          </p>
-
-          {/* Slider input element */}
-          <div className="space-y-3 bg-white/5 border border-white/5 p-4 rounded-2xl">
-            <div className="flex justify-between text-[10px] font-mono text-slate-500 uppercase tracking-widest">
-              <span>Low Priority</span>
-              <span className="text-cyan-400 font-bold">{scores[currentDrive.key]}%</span>
-              <span>Extreme</span>
-            </div>
-            
-            <input 
-              type="range"
-              min="0"
-              max="100"
-              value={scores[currentDrive.key]}
-              onChange={(e) => handleSliderChange(currentDrive.key, parseInt(e.target.value) || 0)}
-              className="w-full h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-cyan-400"
-            />
-          </div>
+          <input
+            type="range"
+            min="0"
+            max="100"
+            value={scores[currentDrive.key]}
+            onChange={(e) => handleSliderChange(currentDrive.key, parseInt(e.target.value) || 0)}
+            className="w-full"
+          />
         </div>
+      </div>
 
-        {/* Buttons action bar */}
-        <div className="grid grid-cols-2 gap-3 pt-4 border-t border-white/5 mt-4 shrink-0 font-mono">
-          <button
-            onClick={onClose}
-            className="rounded-xl border border-white/10 text-slate-400 hover:text-white hover:bg-white/5 text-xs font-mono tracking-widest py-3 uppercase transition-all"
-          >
-            QUIT QUIZ
-          </button>
-          
-          <button
-            onClick={handleNext}
-            className="rounded-xl bg-white text-black hover:bg-cyan-400 text-xs font-mono tracking-widest font-bold py-3 uppercase transition-all flex items-center justify-center gap-1.5"
-          >
-            <span>{activeQuestion < drives.length - 1 ? "NEXT DRIVE" : "SAVE CHART"}</span>
-            {activeQuestion < drives.length - 1 ? (
-              <ChevronRight className="w-3.5 h-3.5" />
-            ) : (
-              <Check className="w-3.5 h-3.5 stroke-[3px]" />
-            )}
-          </button>
-        </div>
-
+      <div className="grid grid-cols-2 gap-3 p-4 border-t border-white/5 shrink-0 safe-bottom">
+        <button
+          onClick={onClose}
+          className="py-4 rounded-2xl border border-white/10 text-slate-400 text-sm font-semibold active:bg-white/5"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleNext}
+          className="py-4 rounded-2xl bg-white text-black text-sm font-bold active:bg-cyan-400 flex items-center justify-center gap-1.5"
+        >
+          <span>{activeQuestion < drives.length - 1 ? "Next" : "Save"}</span>
+          {activeQuestion < drives.length - 1 ? (
+            <ChevronRight className="w-4 h-4" />
+          ) : (
+            <Check className="w-4 h-4 stroke-[3px]" />
+          )}
+        </button>
       </div>
     </div>
   );

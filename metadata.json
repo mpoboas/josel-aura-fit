@@ -1,6 +1,5 @@
 {
   "name": "FitQuest",
-  "description": "A gamified fitness companion turning strength training and cardio sessions into a rewarding quest. Meticulously track volume, hit PRs, maintain daily streaks, complete challenges, climb social leaderboards, and consult an AI Personal Coach.",
-  "requestFramePermissions": [],
-  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+  "description": "A gamified fitness companion turning strength training and cardio sessions into a rewarding quest. Track volume, hit PRs, maintain streaks, complete challenges, and climb leaderboards.",
+  "requestFramePermissions": []
 }

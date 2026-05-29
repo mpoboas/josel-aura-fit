@@ -1,4 +1,4 @@
-import { UserProfile, Workout, Challenge, BossChallenge, LeaderboardEntry, Badge } from "./types";
+import { UserProfile, Workout, Challenge, BossChallenge, LeaderboardEntry, Badge, SocialWorkout } from "./types";
 
 export const DEFAULT_USER_PROFILE: UserProfile = {
   name: "Miguel Póvoas",
@@ -280,6 +280,191 @@ export const INITIAL_GLOBAL_LEADERBOARD: LeaderboardEntry[] = [
   { rank: 48, name: "Miguel P.", avatar: "MP", xp: 3100, tier: "Silver", isMe: true },
   { rank: 49, name: "Bruce Wayne", avatar: "BW", xp: 3050, tier: "Silver" },
   { rank: 50, name: "Clark Kent", avatar: "CK", xp: 2980, tier: "Silver" }
+];
+
+export const INITIAL_SOCIAL_FEED: SocialWorkout[] = [
+  {
+    id: "sw_1",
+    authorName: "Ana S.",
+    authorAvatar: "AS",
+    authorTier: "Gold",
+    highFiveCount: 3,
+    workout: {
+      id: "fw_1",
+      title: "Morning Leg Destroyer",
+      date: "2h ago",
+      rawDate: "2026-05-29T06:30:00.000Z",
+      duration: 55,
+      xpEarned: 920,
+      exercises: [
+        {
+          id: "fe1",
+          name: "Squats",
+          category: "Legs",
+          sets: [
+            { id: "fs1", weight: 100, reps: 8 },
+            { id: "fs2", weight: 110, reps: 6, isPR: true }
+          ]
+        },
+        {
+          id: "fe2",
+          name: "Leg Press",
+          category: "Legs",
+          sets: [{ id: "fs3", weight: 180, reps: 10 }]
+        }
+      ]
+    }
+  },
+  {
+    id: "sw_2",
+    authorName: "Miguel P.",
+    authorAvatar: "MP",
+    authorTier: "Silver",
+    isMe: true,
+    highFiveCount: 2,
+    workout: {
+      id: "w_6",
+      title: "Chest Day Powerhouse",
+      date: "Yesterday",
+      rawDate: "2026-05-28T09:41:00.000Z",
+      duration: 42,
+      xpEarned: 840,
+      exercises: [
+        {
+          id: "ex_bp",
+          name: "Bench Press",
+          category: "Chest",
+          sets: [
+            { id: "s10", weight: 80, reps: 8 },
+            { id: "s11", weight: 85, reps: 6 },
+            { id: "s12", weight: 90, reps: 5, isPR: true }
+          ]
+        },
+        {
+          id: "ex_ohp",
+          name: "Overhead Press",
+          category: "Shoulders",
+          sets: [
+            { id: "s13", weight: 60, reps: 8 },
+            { id: "s14", weight: 62.5, reps: 7 }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    id: "sw_3",
+    authorName: "João R.",
+    authorAvatar: "JR",
+    authorTier: "Silver",
+    highFiveCount: 5,
+    workout: {
+      id: "fw_2",
+      title: "Pull Day Volume",
+      date: "Yesterday",
+      rawDate: "2026-05-28T18:00:00.000Z",
+      duration: 48,
+      xpEarned: 780,
+      exercises: [
+        {
+          id: "fe3",
+          name: "Deadlifts",
+          category: "Back",
+          sets: [
+            { id: "fs4", weight: 130, reps: 5 },
+            { id: "fs5", weight: 140, reps: 3, isPR: true }
+          ]
+        },
+        {
+          id: "fe4",
+          name: "Barbell Rows",
+          category: "Back",
+          sets: [{ id: "fs6", weight: 70, reps: 10 }]
+        }
+      ]
+    }
+  },
+  {
+    id: "sw_4",
+    authorName: "Tiago F.",
+    authorAvatar: "TF",
+    authorTier: "Silver",
+    highFiveCount: 1,
+    workout: {
+      id: "fw_3",
+      title: "HIIT Cardio Blast",
+      date: "2 days ago",
+      rawDate: "2026-05-27T07:15:00.000Z",
+      duration: 30,
+      xpEarned: 450,
+      exercises: [
+        {
+          id: "fe5",
+          name: "Treadmill Run",
+          category: "Cardio",
+          sets: [{ id: "fs7", weight: 0, reps: 30 }]
+        }
+      ]
+    }
+  },
+  {
+    id: "sw_5",
+    authorName: "Carlos F.",
+    authorAvatar: "CF",
+    authorTier: "Bronze",
+    highFiveCount: 4,
+    workout: {
+      id: "fw_4",
+      title: "Push Split Session",
+      date: "2 days ago",
+      rawDate: "2026-05-27T17:30:00.000Z",
+      duration: 40,
+      xpEarned: 620,
+      exercises: [
+        {
+          id: "fe6",
+          name: "Incline Dumbbell Press",
+          category: "Chest",
+          sets: [{ id: "fs8", weight: 32, reps: 10 }]
+        },
+        {
+          id: "fe7",
+          name: "Lateral Raises",
+          category: "Shoulders",
+          sets: [{ id: "fs9", weight: 12, reps: 15 }]
+        }
+      ]
+    }
+  },
+  {
+    id: "sw_6",
+    authorName: "Maria G.",
+    authorAvatar: "MG",
+    authorTier: "Bronze",
+    highFiveCount: 2,
+    workout: {
+      id: "fw_5",
+      title: "Core & Conditioning",
+      date: "3 days ago",
+      rawDate: "2026-05-26T08:00:00.000Z",
+      duration: 35,
+      xpEarned: 380,
+      exercises: [
+        {
+          id: "fe8",
+          name: "Plank",
+          category: "Core",
+          sets: [{ id: "fs10", weight: 0, reps: 3 }]
+        },
+        {
+          id: "fe9",
+          name: "Stationary Bike",
+          category: "Cardio",
+          sets: [{ id: "fs11", weight: 0, reps: 20 }]
+        }
+      ]
+    }
+  }
 ];
 
 export const PRESET_EXERCISES = [

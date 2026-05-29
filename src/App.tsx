@@ -1,30 +1,37 @@
 import { useState, useEffect } from "react";
-import { UserProfile, Workout, Challenge, BossChallenge, LeaderboardEntry, Badge } from "./types";
-import { 
-  DEFAULT_USER_PROFILE, 
-  INITIAL_CHALLENGES, 
-  INITIAL_BOSS_CHALLENGE, 
-  INITIAL_FRIENDS_LEADERBOARD, 
-  INITIAL_GLOBAL_LEADERBOARD, 
-  INITIAL_BADGES, 
-  INITIAL_WORKOUT_HISTORY 
+import { UserProfile, Workout, Challenge, BossChallenge, LeaderboardEntry, Badge, SocialWorkout } from "./types";
+import {
+  DEFAULT_USER_PROFILE,
+  INITIAL_CHALLENGES,
+  INITIAL_BOSS_CHALLENGE,
+  INITIAL_FRIENDS_LEADERBOARD,
+  INITIAL_GLOBAL_LEADERBOARD,
+  INITIAL_BADGES,
+  INITIAL_WORKOUT_HISTORY,
+  INITIAL_SOCIAL_FEED
 } from "./data";
 
-// Views
 import HomeView from "./components/HomeView";
 import WorkoutLogView from "./components/WorkoutLogView";
 import LeaderboardView from "./components/LeaderboardView";
 import ChallengesView from "./components/ChallengesView";
 import ProfileView from "./components/ProfileView";
-import AICoachTab from "./components/AICoachTab";
 import OnboardingSurvey from "./components/OnboardingSurvey";
 import MainQuizOverlay from "./components/MainQuizOverlay";
 
-// Icons
-import { Home, Plus, Trophy, Target, User, Bot, Sparkles, HelpCircle, Activity } from "lucide-react";
+import { Home, Plus, Trophy, Target, User } from "lucide-react";
+
+type Tab = "Home" | "Log" | "Rank" | "Goals" | "Profile";
+
+const NAV_ITEMS: { id: Tab; label: string; icon: typeof Home }[] = [
+  { id: "Home", label: "Home", icon: Home },
+  { id: "Rank", label: "Rank", icon: Trophy },
+  { id: "Log", label: "Log", icon: Plus },
+  { id: "Goals", label: "Goals", icon: Target },
+  { id: "Profile", label: "Profile", icon: User },
+];
 
 export default function App() {
-  // App states initialized cleanly from local storage if available
   const [userProfile, setUserProfile] = useState<UserProfile>(() => {
     const saved = localStorage.getItem("fq_profile_v2");
     return saved ? JSON.parse(saved) : DEFAULT_USER_PROFILE;
@@ -60,10 +67,14 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_BADGES;
   });
 
-  const [activeTab, setActiveTab] = useState<string>("Home");
-  const [showDrivesQuiz, setShowDrivesQuiz] = useState<boolean>(false);
+  const [socialFeed, setSocialFeed] = useState<SocialWorkout[]>(() => {
+    const saved = localStorage.getItem("fq_social_feed_v2");
+    return saved ? JSON.parse(saved) : INITIAL_SOCIAL_FEED;
+  });
 
-  // Sync state with local storage
+  const [activeTab, setActiveTab] = useState<Tab>("Home");
+  const [showDrivesQuiz, setShowDrivesQuiz] = useState(false);
+
   useEffect(() => {
     localStorage.setItem("fq_profile_v2", JSON.stringify(userProfile));
   }, [userProfile]);
@@ -92,7 +103,10 @@ export default function App() {
     localStorage.setItem("fq_badges_v2", JSON.stringify(badges));
   }, [badges]);
 
-  // Handle survey completions
+  useEffect(() => {
+    localStorage.setItem("fq_social_feed_v2", JSON.stringify(socialFeed));
+  }, [socialFeed]);
+
   const handleOnboardingComplete = (surveyProfile: Partial<UserProfile>) => {
     setUserProfile((prev) => ({
       ...prev,
@@ -107,11 +121,6 @@ export default function App() {
       octalysisScores: newScores
     }));
     setShowDrivesQuiz(false);
-  };
-
-  // Add customized AI challenge straight to targets roster
-  const handleAddChallenge = (newChallenge: Challenge) => {
-    setActiveChallenges((prev) => [newChallenge, ...prev]);
   };
 
   const handleCompleteChallenge = (id: string) => {
@@ -131,7 +140,6 @@ export default function App() {
     }
   };
 
-  // Dynamically calculate and increment XP safely
   const handleIncrementXP = (amount: number) => {
     setUserProfile((prev) => {
       let currentXp = prev.xp + amount;
@@ -141,10 +149,9 @@ export default function App() {
       while (currentXp >= newXpGoal) {
         currentXp -= newXpGoal;
         currentLevel += 1;
-        newXpGoal = Math.round(newXpGoal * 1.15); // scales slowly
+        newXpGoal = Math.round(newXpGoal * 1.15);
       }
 
-      // Automatically award level milestones or badges based on total workouts
       return {
         ...prev,
         level: currentLevel,
@@ -154,18 +161,12 @@ export default function App() {
     });
   };
 
-  // Handle completed Workout entries
   const handleFinishWorkout = (workout: Workout) => {
-    // Add workout to history list
     setWorkoutHistory((prev) => [workout, ...prev]);
 
-    // Handle completed milestones inside profile & boss HP reductions
     setUserProfile((prev) => {
-      // Calculate new streak logic
       const activeStreak = prev.streak + 1;
       const totalCount = prev.workoutsCompleted + 1;
-
-      // Update global leaderboard rank dynamically as they earn points
       const nextGlobalPos = Math.max(10, prev.globalRank - (workout.xpEarned > 500 ? 1 : 0));
 
       return {
@@ -176,7 +177,6 @@ export default function App() {
       };
     });
 
-    // Check if new PR flag was raised to auto-unlock the "PR Hunter" Badge in the cabinet!
     const hasPR = workout.exercises.some((e) => e.sets.some((s) => s.isPR));
     if (hasPR) {
       setBadges((prev) =>
@@ -184,13 +184,11 @@ export default function App() {
       );
     }
 
-    // Boost the Boss active count metrics
     setBossChallenge((prev) => {
       const updatedCount = prev.workoutsCurrent + 1;
       const isCompleteNow = updatedCount >= prev.workoutsGoal;
 
       if (isCompleteNow && !prev.completed) {
-        // Unlock boss badge when slain
         setBadges((prevBadges) =>
           prevBadges.map((b) => (b.id === prev.badgeReward ? { ...b, unlockedAt: new Date().toISOString() } : b))
         );
@@ -208,21 +206,42 @@ export default function App() {
       };
     });
 
-    // Increment overall XP
     handleIncrementXP(workout.xpEarned);
 
-    // Dynamic friends leader board points scaling so colleagues also progress logically over time!
     setFriendsLeaderboard((prev) =>
       prev
         .map((friend) => {
           if (friend.isMe) {
             return { ...friend, xp: friend.xp + workout.xpEarned };
           }
-          // other friends earn 100-200 random points on workouts to keep things competitive
           return { ...friend, xp: friend.xp + Math.round(Math.random() * 80 + 30) };
         })
         .sort((a, b) => b.xp - a.xp)
         .map((entry, idx) => ({ ...entry, rank: idx + 1 }))
+    );
+
+    setSocialFeed((prev) => {
+      const me = friendsLeaderboard.find((f) => f.isMe);
+      const feedEntry: SocialWorkout = {
+        id: `sw_${Date.now()}`,
+        authorName: me?.name || userProfile.name,
+        authorAvatar: me?.avatar || userProfile.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase(),
+        authorTier: userProfile.rank,
+        isMe: true,
+        highFiveCount: 0,
+        workout: { ...workout, date: "Just now" }
+      };
+      return [feedEntry, ...prev];
+    });
+  };
+
+  const handleHighFiveFeed = (id: string) => {
+    setSocialFeed((prev) =>
+      prev.map((item) =>
+        item.id === id && !item.highFived && !item.isMe
+          ? { ...item, highFived: true, highFiveCount: item.highFiveCount + 1 }
+          : item
+      )
     );
   };
 
@@ -232,7 +251,7 @@ export default function App() {
   };
 
   const resetAllLocalState = () => {
-    if (confirm("Reset FitQuest quest states & wipe logs history?")) {
+    if (confirm("Reset FitQuest and wipe all progress?")) {
       localStorage.removeItem("fq_profile_v2");
       localStorage.removeItem("fq_workouts_v2");
       localStorage.removeItem("fq_challenges_v2");
@@ -240,209 +259,130 @@ export default function App() {
       localStorage.removeItem("fq_friends_v2");
       localStorage.removeItem("fq_global_v2");
       localStorage.removeItem("fq_badges_v2");
+      localStorage.removeItem("fq_social_feed_v2");
       window.location.reload();
     }
   };
 
   return (
-    <div id="application-root" className="min-h-screen bg-[#050505] flex flex-col md:flex-row relative font-sans text-slate-100">
-      
-      {/* Dynamic onboarding Survey launcher */}
+    <div className="h-dvh bg-[#050505] flex flex-col font-sans text-slate-100 safe-x overflow-hidden">
       {!userProfile.onboardingComplete && (
         <OnboardingSurvey onComplete={handleOnboardingComplete} />
       )}
 
-      {/* Main Drives Quiz Overlays */}
       {showDrivesQuiz && (
-        <MainQuizOverlay 
-          userProfile={userProfile} 
-          onUpdateScores={handleUpdateScores} 
-          onClose={() => setShowDrivesQuiz(false)} 
+        <MainQuizOverlay
+          userProfile={userProfile}
+          onUpdateScores={handleUpdateScores}
+          onClose={() => setShowDrivesQuiz(false)}
         />
       )}
 
-      {/* Left Column Section: Dynamic Desktop Branding + Analytics Summary Panel */}
-      <div className="hidden md:flex md:w-1/3 bg-gradient-to-br from-zinc-900 via-zinc-950 to-[#050505] border-r border-white/10 p-8 flex-col justify-between shrink-0">
-        <div>
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-2xl bg-cyan-500/10 border border-cyan-400/20 flex items-center justify-center text-cyan-400 font-black relative">
-              🏆
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-emerald-500 rounded-full border-2 border-zinc-900" />
-            </div>
-            <div>
-              <h1 className="text-xl font-bold tracking-tight text-white font-serif italic">FitQuest</h1>
-              <p className="text-[10px] uppercase font-mono tracking-widest font-bold text-cyan-400">Gamified Strength & Splits Companion</p>
-            </div>
-          </div>
+      <main className="flex-1 min-h-0 overflow-hidden main-with-nav">
+        <div className="h-full min-h-0">
+        {activeTab === "Home" && (
+          <HomeView
+            userProfile={userProfile}
+            activeChallenges={activeChallenges}
+            socialFeed={socialFeed}
+            onChangeUserProfile={(updates) => setUserProfile((prev) => ({ ...prev, ...updates }))}
+            onNavigateToTab={setActiveTab}
+            onHighFiveFeed={handleHighFiveFeed}
+          />
+        )}
+        {activeTab === "Log" && (
+          <WorkoutLogView
+            userProfile={userProfile}
+            lastWorkout={workoutHistory[0]}
+            onFinishWorkout={handleFinishWorkout}
+            onNavigateToTab={setActiveTab}
+          />
+        )}
+        {activeTab === "Rank" && (
+          <LeaderboardView
+            userProfile={userProfile}
+            friendsLeaderboard={friendsLeaderboard}
+            globalLeaderboard={globalLeaderboard}
+            onChangeLeaderboards={handleUpdateLeaderboard}
+          />
+        )}
+        {activeTab === "Goals" && (
+          <ChallengesView
+            bossChallenge={bossChallenge}
+            activeChallenges={activeChallenges}
+            onCompleteChallenge={handleCompleteChallenge}
+            onNavigateToTab={setActiveTab}
+          />
+        )}
+        {activeTab === "Profile" && (
+          <ProfileView
+            userProfile={userProfile}
+            workoutHistory={workoutHistory}
+            badges={badges}
+            onChangeUserProfile={(updates) => setUserProfile((prev) => ({ ...prev, ...updates }))}
+            onNavigateToTab={setActiveTab}
+            onOpenDrivesQuiz={() => setShowDrivesQuiz(true)}
+            onResetApp={resetAllLocalState}
+          />
+        )}
+        </div>
+      </main>
 
-          <div className="space-y-6 mt-12">
-            <div>
-              <h3 className="text-xs font-semibold text-slate-500 uppercase tracking-widest font-mono mb-2">Theoretical Foundations</h3>
-              <p className="text-xs text-slate-400 leading-relaxed font-sans font-medium">
-                This environment applies Yu-kai Chou's <strong>Octalysis Framework</strong> to map eight primary intrinsic motivators, including <em>Development & Accomplishment</em> (climbing 5 tiers), <em>Loss & Avoidance</em> (Streak Protection Shield mechanics), and <em>Social Influence</em> (Weekly High-Fives list).
-              </p>
-            </div>
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-30 bg-[#050505]/95 backdrop-blur-lg border-t border-white/10 safe-bottom safe-x"
+        aria-label="Main navigation"
+      >
+        <div className="flex items-end justify-around px-1 pt-2 pb-1">
+          {NAV_ITEMS.map(({ id, label, icon: Icon }) => {
+            const isActive = activeTab === id;
+            const isLog = id === "Log";
 
-            {/* Live profile drives summaries */}
-            <div className="bg-zinc-900/50 border border-white/10 rounded-2xl p-5 space-y-3.5 shadow-lg">
-              <h4 className="text-[10px] font-bold text-cyan-400 uppercase tracking-widest font-mono">Current Drives Index</h4>
-              <div className="grid grid-cols-2 gap-3 text-xs font-mono">
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Accomplishment:</span>
-                  <strong className="text-white text-xs">{userProfile.octalysisScores.accomplishment}%</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Creativity Drive:</span>
-                  <strong className="text-white text-xs">{userProfile.octalysisScores.creativity}%</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Social Influence:</span>
-                  <strong className="text-white text-xs">{userProfile.octalysisScores.influence}%</strong>
-                </div>
-                <div>
-                  <span className="text-slate-500 text-[10px] block">Loss Avoidance:</span>
-                  <strong className="text-white text-xs">{userProfile.octalysisScores.avoidance}%</strong>
-                </div>
-              </div>
+            if (isLog) {
+              return (
+                <button
+                  key={id}
+                  onClick={() => setActiveTab(id)}
+                  aria-label={label}
+                  aria-current={isActive ? "page" : undefined}
+                  className="flex flex-col items-center -mt-5 touch-target"
+                >
+                  <div
+                    className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-lg transition-all active:scale-95 ${
+                      isActive
+                        ? "bg-cyan-400 text-black shadow-cyan-400/30"
+                        : "bg-white text-black shadow-white/10"
+                    }`}
+                  >
+                    <Icon className="w-7 h-7 stroke-[2.5px]" />
+                  </div>
+                  <span
+                    className={`text-[11px] font-medium mt-1.5 ${
+                      isActive ? "text-cyan-400" : "text-slate-500"
+                    }`}
+                  >
+                    {label}
+                  </span>
+                </button>
+              );
+            }
 
+            return (
               <button
-                onClick={() => setShowDrivesQuiz(true)}
-                className="mt-4 w-full rounded-xl bg-white text-black hover:bg-cyan-400 py-2.5 text-center text-[10px] font-mono tracking-widest uppercase font-bold transition-all duration-200"
+                key={id}
+                onClick={() => setActiveTab(id)}
+                aria-label={label}
+                aria-current={isActive ? "page" : undefined}
+                className={`flex flex-col items-center gap-1 flex-1 py-1 touch-target transition-colors active:scale-95 ${
+                  isActive ? "text-cyan-400" : "text-slate-500"
+                }`}
               >
-                Assess Octalysis Drives
+                <Icon className={`w-6 h-6 ${isActive ? "stroke-[2.5px]" : ""}`} />
+                <span className="text-[11px] font-medium">{label}</span>
               </button>
-            </div>
-          </div>
+            );
+          })}
         </div>
-
-        <div>
-          <button
-            onClick={resetAllLocalState}
-            className="text-slate-600 hover:text-yellow-500 text-[10px] font-mono tracking-widest uppercase font-bold hover:underline"
-          >
-            Reset App States & Clear Memory
-          </button>
-        </div>
-      </div>
-
-      {/* Center Mobile-First View Container */}
-      <div id="device-simulator-wrapper" className="flex-1 flex justify-center items-stretch h-screen overflow-hidden w-full font-sans">
-        <div id="phone-shell border" className="w-full max-w-md bg-[#050505] md:border-x border-white/10 flex flex-col h-full shadow-2xl relative shadow-cyan-500/5">
-          
-          {/* Core Body Window Scroll */}
-          <div className="flex-1 overflow-hidden relative">
-            {activeTab === "Home" && (
-              <HomeView 
-                userProfile={userProfile} 
-                activeChallenges={activeChallenges} 
-                onChangeUserProfile={setUserProfile}
-                onNavigateToTab={setActiveTab}
-              />
-            )}
-            {activeTab === "Log" && (
-              <WorkoutLogView 
-                userProfile={userProfile} 
-                lastWorkout={workoutHistory[0]} 
-                onFinishWorkout={handleFinishWorkout}
-                onNavigateToTab={setActiveTab}
-              />
-            )}
-            {activeTab === "Rank" && (
-              <LeaderboardView 
-                userProfile={userProfile} 
-                friendsLeaderboard={friendsLeaderboard} 
-                globalLeaderboard={globalLeaderboard} 
-                onChangeLeaderboards={handleUpdateLeaderboard}
-              />
-            )}
-            {activeTab === "Goals" && (
-              <ChallengesView 
-                bossChallenge={bossChallenge} 
-                activeChallenges={activeChallenges} 
-                onCompleteChallenge={handleCompleteChallenge}
-                onNavigateToTab={setActiveTab}
-              />
-            )}
-            {activeTab === "Profile" && (
-              <ProfileView 
-                userProfile={userProfile} 
-                workoutHistory={workoutHistory} 
-                badges={badges} 
-                onChangeUserProfile={setUserProfile}
-                onNavigateToTab={setActiveTab}
-              />
-            )}
-            {activeTab === "Coach" && (
-              <AICoachTab 
-                userProfile={userProfile} 
-                workoutHistory={workoutHistory} 
-                onAddChallenge={handleAddChallenge}
-                onNavigateToTab={setActiveTab}
-              />
-            )}
-          </div>
-
-          {/* Bottom Footers Navigation Bar */}
-          <div className="h-[75px] bg-[#050505] border-t border-white/10 flex items-center justify-around px-2 py-2 shrink-0 relative z-20">
-            <button 
-              onClick={() => setActiveTab("Home")}
-              className={`flex flex-col items-center gap-1 flex-1 transition-colors ${
-                activeTab === "Home" ? "text-cyan-400" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Home className="w-5 h-5" />
-              <span className="text-[9px] font-mono tracking-wide">Home</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab("Log")}
-              className={`flex flex-col items-center gap-1 flex-1 transition-colors ${
-                activeTab === "Log" ? "text-cyan-400" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Plus className="w-5 h-5 bg-cyan-500/10 p-1 rounded-lg border border-cyan-400/20 shrink-0 text-cyan-400" />
-              <span className="text-[9px] font-mono tracking-wide">Log</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab("Rank")}
-              className={`flex flex-col items-center gap-1 flex-1 transition-colors ${
-                activeTab === "Rank" ? "text-cyan-400" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Trophy className="w-5 h-5" />
-              <span className="text-[9px] font-mono tracking-wide">Rank</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab("Goals")}
-              className={`flex flex-col items-center gap-1 flex-1 transition-colors ${
-                activeTab === "Goals" ? "text-cyan-400" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Target className="w-5 h-5" />
-              <span className="text-[9px] font-mono tracking-wide">Goals</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab("Coach")}
-              className={`flex flex-col items-center gap-1 flex-1 transition-colors ${
-                activeTab === "Coach" ? "text-cyan-400 animate-pulse font-bold" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <Bot className="w-5 h-5" />
-              <span className="text-[9px] font-mono tracking-wide">AI Coach</span>
-            </button>
-            <button 
-              onClick={() => setActiveTab("Profile")}
-              className={`flex flex-col items-center gap-1 flex-1 transition-colors ${
-                activeTab === "Profile" ? "text-cyan-400" : "text-slate-400 hover:text-white"
-              }`}
-            >
-              <User className="w-5 h-5" />
-              <span className="text-[9px] font-mono tracking-wide">Profile</span>
-            </button>
-          </div>
-
-        </div>
-      </div>
-
+      </nav>
     </div>
   );
 }

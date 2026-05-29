@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { UserProfile } from "../types";
-import { Sparkles, Trophy, Shuffle, Users, Shield, Zap } from "lucide-react";
+import { Trophy, Shuffle, Users, Zap, Shield, Sparkles } from "lucide-react";
 
 interface Props {
   onComplete: (profile: Partial<UserProfile>) => void;
@@ -23,56 +23,52 @@ export default function OnboardingSurvey({ onComplete }: Props) {
   const questions = [
     {
       id: "q_interest",
-      title: "What is your principal driver in a fitness application?",
-      description: "This helps us adjust the gamified reward systems to your natural behavior.",
+      title: "What motivates you most?",
+      description: "We'll tailor challenges and rewards to match your style.",
       options: [
         {
           value: "Achiever",
-          lbl: "Shattering personal records and leveling up my character",
-          desc: "Taps into Development & Accomplishment",
-          icon: Trophy,
-          color: "text-amber-500 bg-amber-50"
+          lbl: "Breaking records and leveling up",
+          desc: "Progress, PRs, and personal milestones",
+          icon: Trophy
         },
         {
           value: "Explorer",
-          lbl: "Customizing unique workout splits and exploring diverse exercises",
-          desc: "Taps into Empowerment of Creativity & Feedback",
-          icon: Shuffle,
-          color: "text-indigo-500 bg-indigo-50"
+          lbl: "Trying new workouts and exercises",
+          desc: "Variety, creativity, and discovery",
+          icon: Shuffle
         },
         {
           value: "Socialiser",
-          lbl: "Engaging in group challenges, active feeds, and team pacts",
-          desc: "Taps into Social Influence & Relatedness",
-          icon: Users,
-          color: "text-emerald-500 bg-emerald-50"
+          lbl: "Group challenges and community",
+          desc: "Friends, leaderboards, and shared goals",
+          icon: Users
         },
         {
           value: "Killer",
-          lbl: "Competing in weekly sprints to dominate the leaderboards",
-          desc: "Taps into Competitive Scarcity & Influence",
-          icon: Zap,
-          color: "text-rose-500 bg-rose-50"
+          lbl: "Competing on the leaderboard",
+          desc: "Rankings, rivalry, and winning",
+          icon: Zap
         }
       ]
     },
     {
       id: "q_priority",
-      title: "Select your primary fitness objective",
-      description: "Our AI Personal Coach will construct recommendation loops based on this.",
+      title: "What's your main fitness goal?",
+      description: "This shapes your default challenges and tracking focus.",
       options: [
-        { value: "strength", lbl: "Heavy Strength & Hypertrophy Training Splits", desc: "Build pure muscle volume & heavy PRs", icon: Trophy, color: "text-blue-500 bg-blue-50" },
-        { value: "cardio", lbl: "Cardiovascular Endurance, HIIT, & Fat Burn", desc: "Optimize VO2 max & cardiac conditioning", icon: Zap, color: "text-orange-500 bg-orange-50" },
-        { value: "balance", lbl: "Functional Balance, core conditioning, & longevity", desc: "A general blend of conditioning and splits", icon: Shuffle, color: "text-teal-500 bg-teal-50" }
+        { value: "strength", lbl: "Strength & muscle building", desc: "Heavy lifts, hypertrophy, PRs", icon: Trophy },
+        { value: "cardio", lbl: "Cardio & endurance", desc: "HIIT, running, conditioning", icon: Zap },
+        { value: "balance", lbl: "Balanced fitness", desc: "Mix of strength and cardio", icon: Shuffle }
       ]
     },
     {
       id: "q_streak",
-      title: "How do you feel when a busy day risks breaking your streak?",
-      description: "Streaks represent habit consistency, but we design them safely.",
+      title: "How do you feel about streaks?",
+      description: "We can adjust how much streak pressure you feel.",
       options: [
-        { value: "shield", lbl: "Highly anxious! I'd love a 'Streak Shield' item to protect it.", desc: "Focuses on Loss & Avoidance drive", icon: Shield, color: "text-violet-500 bg-violet-50" },
-        { value: "relaxed", lbl: "Undeterred. I prefer pacing myself without rigid milestones.", desc: "Autonomy over obsession focus", icon: Sparkles, color: "text-pink-500 bg-pink-50" }
+        { value: "shield", lbl: "I want streak protection", desc: "Earn shields to safeguard your streak", icon: Shield },
+        { value: "relaxed", lbl: "Keep it flexible", desc: "Progress at my own pace", icon: Sparkles }
       ]
     }
   ];
@@ -81,7 +77,6 @@ export default function OnboardingSurvey({ onComplete }: Props) {
     const updatedAnswers = { ...answers, [questionId]: value };
     setAnswers(updatedAnswers);
 
-    // Calculate dynamic changes to Octalysis scores based on choice
     const newScores = { ...scores };
     if (questionId === "q_interest") {
       if (value === "Achiever") {
@@ -113,8 +108,7 @@ export default function OnboardingSurvey({ onComplete }: Props) {
     if (step < questions.length - 1) {
       setStep(step + 1);
     } else {
-      // Finished!
-      const finalPlayerType = (updatedAnswers["q_interest"] as any) || "Explorer";
+      const finalPlayerType = (updatedAnswers["q_interest"] as UserProfile["playerType"]) || "Explorer";
       onComplete({
         playerType: finalPlayerType,
         onboardingComplete: true,
@@ -126,35 +120,28 @@ export default function OnboardingSurvey({ onComplete }: Props) {
   const currentQuestion = questions[step];
 
   return (
-    <div id="survey-wizard-container" className="fixed inset-0 bg-[#050505] z-50 flex items-center justify-center p-4 font-sans">
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-cyan-950/20 via-[#050505] to-[#050505] pointer-events-none opacity-80" />
-      
-      <div id="survey-wizard-box" className="w-full max-w-lg bg-zinc-900/95 border border-white/10 shadow-2xl rounded-3xl overflow-hidden backdrop-blur-xl relative z-10">
-        
-        {/* Progress Bar Header */}
-        <div className="bg-zinc-900 p-6 text-center border-b border-white/5 relative">
-          <div className="flex justify-between text-xs text-cyan-400 font-mono tracking-widest mb-2">
-            <span>FITQUEST ONBOARDING DESIGN</span>
-            <span>STEP {step + 1} OF {questions.length}</span>
+    <div className="fixed inset-0 bg-[#050505] z-50 flex flex-col safe-top safe-bottom safe-x">
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-cyan-950/30 via-[#050505] to-[#050505] pointer-events-none" />
+
+      <div className="relative z-10 flex flex-col h-full px-4 py-6">
+        <div className="mb-6">
+          <div className="flex justify-between text-xs text-cyan-400 mb-3">
+            <span className="font-semibold">FitQuest</span>
+            <span>Step {step + 1} of {questions.length}</span>
           </div>
           <div className="w-full bg-white/5 h-1.5 rounded-full overflow-hidden">
-            <div 
+            <div
               className="bg-gradient-to-r from-cyan-500 to-blue-500 h-full transition-all duration-300 rounded-full"
               style={{ width: `${((step + 1) / questions.length) * 100}%` }}
             />
           </div>
         </div>
 
-        {/* Question Body */}
-        <div className="p-6 md:p-8">
-          <div className="mb-6">
-            <h1 className="text-xl md:text-2xl font-bold text-white tracking-tight mb-2 font-serif italic">
-              {currentQuestion.title}
-            </h1>
-            <p className="text-sm text-slate-400">
-              {currentQuestion.description}
-            </p>
-          </div>
+        <div className="flex-1 flex flex-col justify-center">
+          <h1 className="text-2xl font-bold text-white mb-2 font-serif italic leading-tight">
+            {currentQuestion.title}
+          </h1>
+          <p className="text-sm text-slate-400 mb-6">{currentQuestion.description}</p>
 
           <div className="space-y-3">
             {currentQuestion.options.map((opt) => {
@@ -163,30 +150,19 @@ export default function OnboardingSurvey({ onComplete }: Props) {
                 <button
                   key={opt.value}
                   onClick={() => handleSelectOption(currentQuestion.id, opt.value)}
-                  className="w-full flex items-center gap-4 text-left p-4 rounded-2xl bg-white/5 hover:bg-white/10 border border-white/5 hover:border-cyan-400/20 transition-all duration-200 group relative"
+                  className="w-full flex items-center gap-4 text-left p-4 rounded-2xl bg-white/5 active:bg-white/10 border border-white/5 active:border-cyan-400/30 active:scale-[0.98] transition-all"
                 >
                   <div className="p-3 rounded-xl shrink-0 text-cyan-400 bg-cyan-500/10 border border-cyan-500/20">
                     <Icon className="w-5 h-5" />
                   </div>
-                  <div>
-                    <div className="text-sm font-semibold text-white group-hover:text-cyan-400 transition-colors">
-                      {opt.lbl}
-                    </div>
-                    <div className="text-xs text-slate-400 mt-1">
-                      {opt.desc}
-                    </div>
+                  <div className="min-w-0">
+                    <div className="text-sm font-semibold text-white">{opt.lbl}</div>
+                    <div className="text-xs text-slate-400 mt-0.5">{opt.desc}</div>
                   </div>
                 </button>
               );
             })}
           </div>
-        </div>
-
-        {/* Footer info */}
-        <div className="bg-zinc-950 p-4 text-center border-t border-white/5">
-          <p className="text-[10px] text-slate-500 uppercase tracking-widest font-mono">
-            Guided by Octalysis Framework & Bartle Player Types
-          </p>
         </div>
       </div>
     </div>

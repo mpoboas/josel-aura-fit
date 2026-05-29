@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Workout, Exercise, Set, UserProfile } from "../types";
 import { PRESET_EXERCISES } from "../data";
-import { Plus, Trash2, Trophy, Clock, Check, ChevronDown, Award } from "lucide-react";
+import { Plus, Trash2, Trophy, Clock, Check, Award, X } from "lucide-react";
 
 interface Props {
   userProfile: UserProfile;
@@ -10,8 +10,14 @@ interface Props {
   onNavigateToTab: (tab: string) => void;
 }
 
-export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorkout, onNavigateToTab }: Props) {
-  // Current active logging state
+function formatToday() {
+  const today = new Date();
+  const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  return `${days[today.getDay()]}, ${today.getDate()} ${months[today.getMonth()]}`;
+}
+
+export default function WorkoutLogView({ userProfile, onFinishWorkout, onNavigateToTab }: Props) {
   const [exercises, setExercises] = useState<Exercise[]>([
     {
       id: "ex_1",
@@ -34,12 +40,9 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
     }
   ]);
 
-  const [duration, setDuration] = useState(42); // starts with 42 mins like the mockup
+  const [duration, setDuration] = useState(42);
   const [showAddExModal, setShowAddExModal] = useState(false);
   const [celebration, setCelebration] = useState<{ xp: number; newLevel?: number } | null>(null);
-
-  // Auto-calculate the estimated XP Reward
-  // Base formulation: (sum of weights * reps) * 0.1, with multipliers for PR (+50%) and streaks (+10-30%)
   const [estimatedXp, setEstimatedXp] = useState(840);
 
   useEffect(() => {
@@ -48,9 +51,8 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
 
     exercises.forEach((ex) => {
       ex.sets.forEach((set) => {
-        // Cardio counts differently (no weight, reps = minutes)
         if (ex.category === "Cardio") {
-          totalVolume += set.reps * 1500; // Cardio multiplier
+          totalVolume += set.reps * 1500;
         } else {
           totalVolume += (set.weight || 0) * (set.reps || 0);
         }
@@ -59,17 +61,12 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
     });
 
     let calcXp = Math.round(totalVolume * 0.15) || 50;
-
-    // Apply bonuses
     if (containsPR) calcXp = Math.round(calcXp * 1.5);
     const streakMultiplier = 1 + Math.min(0.3, userProfile.streak * 0.02);
     calcXp = Math.round(calcXp * streakMultiplier);
-
-    // Baseline min/max to feel balanced
     setEstimatedXp(Math.max(100, Math.min(2500, calcXp)));
   }, [exercises, userProfile.streak]);
 
-  // Utility actions for sets and exercises
   const addSet = (exerciseId: string) => {
     setExercises(
       exercises.map((ex) => {
@@ -88,7 +85,7 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
     );
   };
 
-  const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "isPR", value: any) => {
+  const updateSet = (exerciseId: string, setId: string, field: "weight" | "reps" | "isPR", value: number | boolean) => {
     setExercises(
       exercises.map((ex) => {
         if (ex.id === exerciseId) {
@@ -128,12 +125,11 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
     const today = new Date();
     const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-    
     const formattedDate = `${days[today.getDay()]}, ${today.getDate()} ${months[today.getMonth()]}`;
 
     const newWorkout: Workout = {
       id: `w_${Date.now()}`,
-      title: exercises.map(e => e.name).slice(0, 2).join(" & ") + (exercises.length > 2 ? " Split" : " Session"),
+      title: exercises.map((e) => e.name).slice(0, 2).join(" & ") + (exercises.length > 2 ? " Split" : " Session"),
       date: formattedDate,
       rawDate: today.toISOString(),
       duration,
@@ -141,10 +137,7 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
       xpEarned: estimatedXp
     };
 
-    // Trigger parent finish callback
     onFinishWorkout(newWorkout);
-
-    // Trigger local celebration dialog
     setCelebration({
       xp: estimatedXp,
       newLevel: Math.floor((userProfile.xp + estimatedXp) / userProfile.xpToNextLevel) > 0 ? userProfile.level + 1 : undefined
@@ -152,27 +145,24 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
   };
 
   return (
-    <div id="workout-log-view" className="h-full bg-[#050505] text-slate-100 flex flex-col overflow-y-auto">
-      
-      {/* Dynamic Celebration Overlay Screen */}
+    <div className="h-full min-h-0 bg-[#050505] text-slate-100 flex flex-col">
       {celebration && (
-        <div id="celebration-overlay" className="fixed inset-0 bg-[#050505]/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center">
-          <div className="w-20 h-20 rounded-full bg-cyan-400/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6 animate-pulse">
+        <div className="fixed inset-0 bg-[#050505]/95 backdrop-blur-md z-50 flex flex-col items-center justify-center p-6 text-center safe-top safe-bottom safe-x">
+          <div className="w-20 h-20 rounded-full bg-cyan-400/10 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-6">
             <Trophy className="w-10 h-10" />
           </div>
-          <h2 className="text-2xl font-serif italic text-white tracking-tight">Quest Completed!</h2>
-          <p className="text-slate-400 max-w-sm text-xs mt-2 font-sans">
-            Your lifting session has been synced. Core drives and XP indices have updated successfully.
+          <h2 className="text-2xl font-serif italic text-white">Workout Complete!</h2>
+          <p className="text-slate-400 text-sm mt-2 max-w-xs">
+            Great session. Your XP and streak have been updated.
           </p>
 
           <div className="my-8 bg-zinc-900/90 border border-white/10 rounded-2xl p-6 min-w-[200px]">
-            <div className="text-[10px] text-slate-400 uppercase tracking-widest font-mono">Experience Points</div>
+            <div className="text-xs text-slate-400 uppercase tracking-wider">Experience</div>
             <div className="text-4xl font-serif italic text-cyan-400 mt-1">+{celebration.xp} XP</div>
-            
             {celebration.newLevel && (
-              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-cyan-400/10 border border-cyan-400/20 text-xs text-cyan-400 font-bold font-mono">
+              <div className="mt-4 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-cyan-400/10 border border-cyan-400/20 text-xs text-cyan-400 font-bold">
                 <Award className="w-3.5 h-3.5" />
-                <span>LEVEL UP TO {celebration.newLevel}!</span>
+                Level {celebration.newLevel}!
               </div>
             )}
           </div>
@@ -182,181 +172,167 @@ export default function WorkoutLogView({ userProfile, lastWorkout, onFinishWorko
               setCelebration(null);
               onNavigateToTab("Home");
             }}
-            className="px-8 py-3.5 rounded-full bg-white text-black font-extrabold text-xs uppercase tracking-widest hover:bg-cyan-400 transition-colors shadow-lg font-mono"
+            className="w-full max-w-xs py-4 rounded-2xl bg-white text-black font-bold text-sm active:scale-[0.98] transition-transform"
           >
-            Claim Rewards & Return
+            Back to Home
           </button>
         </div>
       )}
 
-      {/* Styled Upper Timing block */}
-      <div className="bg-zinc-900/50 p-4 flex items-center justify-between border-b border-white/5">
+      <div className="bg-zinc-900/50 px-4 py-3 flex items-center justify-between border-b border-white/5 safe-top shrink-0">
         <div>
-          <div className="text-[10px] text-slate-500 tracking-widest font-mono">CURRENT WORKOUT STATE</div>
-          <div className="text-sm font-bold text-white mt-1">Thursday, 29 May</div>
+          <div className="text-xs text-slate-500">Today's workout</div>
+          <div className="text-base font-bold text-white mt-0.5">{formatToday()}</div>
         </div>
-        <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full text-xs font-mono text-cyan-400">
+        <div className="flex items-center gap-1.5 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-cyan-400">
           <Clock className="w-4 h-4 shrink-0" />
-          <input 
-            type="number" 
-            value={duration} 
+          <input
+            type="number"
+            inputMode="numeric"
+            value={duration}
             onChange={(e) => setDuration(Math.max(1, parseInt(e.target.value) || 0))}
-            className="w-10 bg-transparent text-center focus:outline-none focus:text-white font-bold"
+            className="w-10 bg-transparent text-center focus:outline-none font-bold"
           />
-          <span>mins</span>
+          <span className="text-slate-400">min</span>
         </div>
       </div>
 
-      {/* Estimated XP Badge Row */}
-      <div className="p-4">
-        <div className="bg-zinc-900/50 border border-cyan-500/20 rounded-2xl p-4 flex items-center justify-between">
-          <div>
-            <span className="text-xs font-semibold text-slate-300">Estimated Workout XP</span>
-            <p className="text-[10px] text-slate-500 mt-0.5">Calculated based on volume splits & streaks</p>
-          </div>
-          <strong className="text-2xl font-serif italic text-cyan-400 tracking-tight">+{estimatedXp} XP</strong>
+      <div className="px-4 py-3 shrink-0">
+        <div className="bg-cyan-500/10 border border-cyan-500/20 rounded-2xl px-4 py-3 flex items-center justify-between">
+          <span className="text-sm text-slate-300">Estimated XP</span>
+          <strong className="text-xl font-serif italic text-cyan-400">+{estimatedXp}</strong>
         </div>
       </div>
 
-      {/* Exercises Lists */}
-      <div id="exercise-blocks-list" className="space-y-4 px-4 flex-1 pb-10">
+      <div className="flex-1 overflow-y-auto scroll-container px-4 pb-4 space-y-4">
         {exercises.map((ex) => (
-          <div key={ex.id} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4 relative">
-            <div className="flex justify-between items-center mb-4">
+          <div key={ex.id} className="bg-zinc-900/50 border border-white/5 rounded-2xl p-4">
+            <div className="flex justify-between items-start mb-3">
               <div>
-                <h4 className="text-sm font-extrabold text-white">{ex.name}</h4>
-                <span className="inline-block text-[10px] uppercase tracking-widest font-mono text-cyan-400 mt-1">
-                  {ex.category}
-                </span>
+                <h4 className="text-base font-bold text-white">{ex.name}</h4>
+                <span className="inline-block text-xs text-cyan-400 mt-0.5">{ex.category}</span>
               </div>
-              <button 
-                onClick={() => setExercises(exercises.filter(item => item.id !== ex.id))}
-                className="text-slate-500 hover:text-red-400 p-1.5 rounded-lg hover:bg-red-500/5 transition-all"
+              <button
+                onClick={() => setExercises(exercises.filter((item) => item.id !== ex.id))}
+                className="p-2 -mr-1 rounded-xl text-slate-500 active:bg-red-500/10 active:text-red-400 touch-target"
+                aria-label={`Remove ${ex.name}`}
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Set Grid Table */}
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="border-b border-white/5 text-[9px] font-mono text-slate-500 uppercase tracking-widest text-center">
-                    <th className="py-2">Set</th>
-                    <th className="py-2">Weight (KG)</th>
-                    <th className="py-2">Reps</th>
-                    <th className="py-2">PR Indicator</th>
-                    <th className="py-2"></th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {ex.sets.map((set, idx) => (
-                    <tr 
-                      key={set.id} 
-                      className={`text-center font-mono text-xs transition-colors ${
-                        set.isPR ? "text-cyan-400 bg-cyan-500/5" : "text-slate-200"
-                      }`}
-                    >
-                      <td className="py-3 font-semibold text-slate-400">{idx + 1}</td>
-                      <td className="py-2">
-                        {ex.category === "Cardio" ? (
-                          <span className="text-slate-500">—</span>
-                        ) : (
-                          <input 
-                            type="number" 
-                            value={set.weight} 
-                            onChange={(e) => updateSet(ex.id, set.id, "weight", Math.max(0, parseFloat(e.target.value) || 0))}
-                            className="w-14 bg-white/5 border border-white/10 rounded-lg p-1.5 text-center focus:outline-none focus:border-cyan-500"
-                          />
-                        )}
-                      </td>
-                      <td className="py-2">
-                        <input 
-                          type="number" 
-                          value={set.reps} 
-                          onChange={(e) => updateSet(ex.id, set.id, "reps", Math.max(0, parseInt(e.target.value) || 0))}
-                          className="w-14 bg-white/5 border border-white/10 rounded-lg p-1.5 text-center focus:outline-none focus:border-cyan-500"
-                        />
-                      </td>
-                      <td className="py-2">
-                        <label className="inline-flex justify-center items-center cursor-pointer p-1 rounded-lg">
-                          <input 
-                            type="checkbox" 
-                            checked={set.isPR || false} 
-                            onChange={(e) => updateSet(ex.id, set.id, "isPR", e.target.checked)}
-                            className="sr-only peer"
-                          />
-                          <div className="w-9 h-5 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500 relative shrink-0"></div>
-                        </label>
-                      </td>
-                      <td className="py-2">
-                        <button 
-                          onClick={() => removeSet(ex.id, set.id)}
-                          className="text-slate-500 hover:text-red-400 font-semibold p-1"
-                        >
-                          &times;
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="space-y-2">
+              {ex.sets.map((set, idx) => (
+                <div
+                  key={set.id}
+                  className={`flex items-center gap-2 p-3 rounded-xl border ${
+                    set.isPR ? "bg-cyan-500/5 border-cyan-500/20" : "bg-white/[0.03] border-white/5"
+                  }`}
+                >
+                  <span className="w-7 text-center text-sm font-bold text-slate-500 shrink-0">{idx + 1}</span>
+
+                  {ex.category !== "Cardio" && (
+                    <div className="flex-1 min-w-0">
+                      <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">kg</label>
+                      <input
+                        type="number"
+                        inputMode="decimal"
+                        value={set.weight}
+                        onChange={(e) => updateSet(ex.id, set.id, "weight", Math.max(0, parseFloat(e.target.value) || 0))}
+                        className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-3 text-center text-base font-semibold focus:outline-none focus:border-cyan-500"
+                      />
+                    </div>
+                  )}
+
+                  <div className="flex-1 min-w-0">
+                    <label className="text-[10px] text-slate-500 uppercase tracking-wider block mb-1">
+                      {ex.category === "Cardio" ? "min" : "reps"}
+                    </label>
+                    <input
+                      type="number"
+                      inputMode="numeric"
+                      value={set.reps}
+                      onChange={(e) => updateSet(ex.id, set.id, "reps", Math.max(0, parseInt(e.target.value) || 0))}
+                      className="w-full bg-white/5 border border-white/10 rounded-lg py-2.5 px-3 text-center text-base font-semibold focus:outline-none focus:border-cyan-500"
+                    />
+                  </div>
+
+                  <button
+                    onClick={() => updateSet(ex.id, set.id, "isPR", !set.isPR)}
+                    className={`shrink-0 px-2.5 py-2 rounded-lg text-xs font-bold transition-colors touch-target ${
+                      set.isPR
+                        ? "bg-cyan-500 text-black"
+                        : "bg-white/5 text-slate-500 border border-white/10"
+                    }`}
+                  >
+                    PR
+                  </button>
+
+                  <button
+                    onClick={() => removeSet(ex.id, set.id)}
+                    className="p-2 text-slate-500 active:text-red-400 touch-target shrink-0"
+                    aria-label="Remove set"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+              ))}
             </div>
 
-            <button 
+            <button
               onClick={() => addSet(ex.id)}
-              className="mt-3 w-full border border-dashed border-white/10 hover:border-cyan-500/30 rounded-xl p-2 text-center text-[10px] font-mono tracking-widest font-semibold text-cyan-400 hover:text-cyan-300 hover:bg-cyan-500/5 transition-all"
+              className="mt-3 w-full border border-dashed border-white/10 active:border-cyan-500/30 rounded-xl py-3 text-sm font-semibold text-cyan-400 active:bg-cyan-500/5 transition-colors"
             >
-              + ADD SET
+              + Add Set
             </button>
           </div>
         ))}
 
-        <div className="grid grid-cols-2 gap-3 mt-4">
-          <button 
-            type="button"
-            onClick={() => setShowAddExModal(true)}
-            className="border border-dashed border-white/10 hover:border-cyan-500/40 rounded-2xl p-4 text-center cursor-pointer hover:bg-cyan-500/5 hover:text-cyan-300 transition-all font-mono text-xs font-semibold flex flex-col items-center justify-center gap-1.5 text-slate-500"
-          >
-            <Plus className="w-5 h-5 text-cyan-400" />
-            <span>ADD EXERCISE</span>
-          </button>
-          
-          <button 
-            type="button"
-            onClick={handleComplete}
-            disabled={exercises.length === 0}
-            className="rounded-2xl bg-white hover:bg-cyan-400 text-black font-extrabold font-mono text-xs cursor-pointer transition-all flex flex-col items-center justify-center gap-1.5 border border-white/10 shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <Check className="w-5 h-5 text-black stroke-[3px]" />
-            <span>FINISH & GAIN XP</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => setShowAddExModal(true)}
+          className="w-full border border-dashed border-white/10 active:border-cyan-500/40 rounded-2xl py-4 flex items-center justify-center gap-2 text-slate-400 active:text-cyan-300 active:bg-cyan-500/5 transition-colors"
+        >
+          <Plus className="w-5 h-5 text-cyan-400" />
+          <span className="text-sm font-semibold">Add Exercise</span>
+        </button>
       </div>
 
-      {/* Add Exercise Modal Dropdown Overlay */}
+      <div className="shrink-0 px-4 py-3 border-t border-white/10 bg-[#050505]/95 backdrop-blur-lg safe-bottom">
+        <button
+          type="button"
+          onClick={handleComplete}
+          disabled={exercises.length === 0}
+          className="w-full py-4 rounded-2xl bg-white active:bg-cyan-400 text-black font-bold text-sm flex items-center justify-center gap-2 disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98] transition-all"
+        >
+          <Check className="w-5 h-5 stroke-[3px]" />
+          Finish Workout · +{estimatedXp} XP
+        </button>
+      </div>
+
       {showAddExModal && (
-        <div id="add-exercise-modal" className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-zinc-900 w-full max-w-sm rounded-[2rem] border border-white/10 p-6 shadow-2xl overflow-hidden flex flex-col max-h-[480px]">
-            <div className="flex justify-between items-center mb-4">
-              <h3 className="text-xs font-bold font-mono tracking-widest text-slate-400">PRESET CORE EXERCISES</h3>
-              <button 
+        <div className="fixed inset-0 bg-black/85 backdrop-blur-sm z-50 flex flex-col safe-top safe-bottom safe-x">
+          <div className="flex-1 flex flex-col bg-zinc-900 mt-auto rounded-t-3xl border-t border-white/10 max-h-[85dvh]">
+            <div className="flex justify-between items-center px-5 py-4 border-b border-white/5 shrink-0">
+              <h3 className="text-base font-bold text-white">Add Exercise</h3>
+              <button
                 onClick={() => setShowAddExModal(false)}
-                className="text-slate-400 hover:text-white text-lg font-bold font-mono"
+                className="p-2 rounded-xl text-slate-400 active:bg-white/5 touch-target"
+                aria-label="Close"
               >
-                &times;
+                <X className="w-5 h-5" />
               </button>
             </div>
-            
-            <div className="overflow-y-auto flex-1 divide-y divide-white/5 pr-1 font-mono">
+
+            <div className="overflow-y-auto scroll-container flex-1 divide-y divide-white/5">
               {PRESET_EXERCISES.map((preset) => (
                 <button
                   key={preset.name}
                   onClick={() => handleAddPresetExercise(preset)}
-                  className="w-full text-left py-3 flex justify-between items-center group hover:bg-white/5 px-2 rounded-xl transition"
+                  className="w-full text-left px-5 py-4 flex justify-between items-center active:bg-white/5 transition-colors"
                 >
-                  <span className="text-xs text-white group-hover:text-cyan-400 font-semibold">{preset.name}</span>
-                  <span className="text-[9px] px-2 py-0.5 rounded-full bg-white/5 text-slate-400 border border-white/5">{preset.category}</span>
+                  <span className="text-sm font-semibold text-white">{preset.name}</span>
+                  <span className="text-xs px-2.5 py-1 rounded-full bg-white/5 text-slate-400">{preset.category}</span>
                 </button>
               ))}
             </div>
